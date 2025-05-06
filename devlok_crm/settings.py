@@ -93,7 +93,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [os.getenv('REDIS_URL', 'redis://default:hWPvnFEERsGqbAZbgMYQlSrzMjPiZfte@centerbeam.proxy.rlwy.net:18968')],
+            "hosts": [os.getenv('REDIS_URL', 'redis://default:cTFVSJbRmvNCYGxQUfzUDEcLEnxtuAhp@nozomi.proxy.rlwy.net:20713')],
         },
     },
     "notifications": {
@@ -145,7 +145,7 @@ GOOGLE_SHEETS_CREDENTIALS = os.path.join(BASE_DIR, "google_sheets_credentials.js
 GOOGLE_SHEET_ID = "1JjqmCd_3coQA6kc9D5EX8zsI26JGIGLgunckotWk3GA"
 
 # Celery with Redis
-CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://default:hWPvnFEERsGqbAZbgMYQlSrzMjPiZfte@centerbeam.proxy.rlwy.net:18968')
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://default:cTFVSJbRmvNCYGxQUfzUDEcLEnxtuAhp@nozomi.proxy.rlwy.net:20713')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
@@ -163,8 +163,7 @@ CORS_ALLOW_HEADERS = [
 CORS_ALLOWED_ORIGINS = [
     "https://crmdevlok-production.up.railway.app/",
     "https://devlokcrmbackend.up.railway.app/",
-    "http://127.0.0.1:5173",
-    "http://localhost:5173",
+    
 ]
 
 CSRF_TRUSTED_ORIGINS = [
