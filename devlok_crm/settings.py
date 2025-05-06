@@ -11,7 +11,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["devlokcrm-production.up.railway.app"]  # Set specific Railway domain in production for security
 
-DATABASES_URL = "postgresql://postgres:meRuUbwwDedkcSoUxdUkXwXfvBrPROBZ@crossover.proxy.rlwy.net:12564/railway"
+DATABASES_URL = "postgresql://postgres:pCcVtZTXRHjWnkAIQWnrtRoENnDHJRmb@yamanote.proxy.rlwy.net:33209/railway"
 
 # Installed apps
 INSTALLED_APPS = [
@@ -93,7 +93,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [os.getenv('REDIS_URL', 'redis://default:ukhVBXycMiVXKDAUtUCRsKRarzXfHUnk@centerbeam.proxy.rlwy.net:55935')],
+            "hosts": [os.getenv('REDIS_URL', 'redis://default:hWPvnFEERsGqbAZbgMYQlSrzMjPiZfte@centerbeam.proxy.rlwy.net:18968')],
         },
     },
     "notifications": {
@@ -145,7 +145,7 @@ GOOGLE_SHEETS_CREDENTIALS = os.path.join(BASE_DIR, "google_sheets_credentials.js
 GOOGLE_SHEET_ID = "1JjqmCd_3coQA6kc9D5EX8zsI26JGIGLgunckotWk3GA"
 
 # Celery with Redis
-CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://default:ukhVBXycMiVXKDAUtUCRsKRarzXfHUnk@centerbeam.proxy.rlwy.net:55935')
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://default:hWPvnFEERsGqbAZbgMYQlSrzMjPiZfte@centerbeam.proxy.rlwy.net:18968')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
