@@ -59,13 +59,11 @@ def Login_func(request):
         email = serializer.validated_data['email']
         password = serializer.validated_data['password']
 
-        print(f"Trying to log in: {email}")
 
         # ✅ Check if the user is Admin
         admin_user = Admin_reg.objects.filter(email=email).first()
         if admin_user:
             if check_password(password, admin_user.password):  # ✅ Admin Password Check
-                print("Admin password matched!")
                 
                 # Use the associated `User` model instance for JWT generation
                 refresh = RefreshToken.for_user(admin_user.user)  # Use the `User` instance
@@ -84,7 +82,6 @@ def Login_func(request):
         sales_manager_user = Sales_manager_reg.objects.filter(email=email).first()
         if sales_manager_user:
             if check_password(password, sales_manager_user.password):  # ✅ Sales Manager Password Check
-                print("Sales Manager password matched!")
 
                 # Use the associated `User` model instance for JWT generation
                 refresh = RefreshToken.for_user(sales_manager_user.user)  # Use the `User` instance
@@ -227,7 +224,7 @@ def forgot_password(request):
 
     reset_token = user.generate_reset_token()
 
-    reset_link = f"https://devlokcrmfrontend-production.up.railway.app/reset-password/{reset_token}/"
+    reset_link = f"https://crmdevlok-production.up.railway.app/reset-password/{reset_token}/"
 
     subject = "Password Reset Request"
     message = f"Click the link below to reset your password:\n{reset_link}\nThis link will expire in 15 minutes."

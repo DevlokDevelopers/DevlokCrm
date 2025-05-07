@@ -587,8 +587,7 @@ def get_event_reminder_admin(request):
     local_current_time = localtime(current_time)
     reminder_time = local_current_time + timedelta(minutes=5)  # Follow-ups happening in 5 minutes
 
-    print(f"Local Current Time: {local_current_time}")
-    print(f"Reminder Time: {reminder_time}")
+   
 
    
     upcoming_events = Admin_event_list.objects.filter(
@@ -606,7 +605,6 @@ def get_event_reminder_admin(request):
         for e in upcoming_events
     ]
     notifications = event_notifications
-    print("Generated notifications:", notifications)
 
     return Response({
         "notifications": notifications,

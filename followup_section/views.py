@@ -58,7 +58,6 @@ def create_followup(request, lead_id):
         # Save inside a transaction block
         with transaction.atomic():
             followup = serializer.save(follower=salesmanager, lead=lead)
-            print(f"Follow-up created with ID: {followup.id}")
 
             def enqueue_notifications():
                 send_followup_notifications.delay(followup.id, "created")
@@ -216,8 +215,7 @@ def get_followup_reminders(request):
     local_current_time = localtime(current_time)
     reminder_time = local_current_time + timedelta(minutes=5)  # Follow-ups happening in 5 minutes
 
-    print(f"Local Current Time: {local_current_time}")
-    print(f"Reminder Time: {reminder_time}")
+    
 
     upcoming_followups = FollowUp.objects.filter(
         follower_id=salesmanager.id,
@@ -244,7 +242,6 @@ def get_followup_reminders(request):
         for e in upcoming_events
     ]
     notifications = notifications + event_notifications
-    print("Generated notifications:", notifications)
 
     return Response({
         "notifications": notifications,
@@ -285,11 +282,9 @@ def salesmanager_today_upcoming_events(request):
     )
 
     # ✅ Debugging Logs (Optional - Remove Later)
-    print(f"Total Follow-ups Today: {followups.count()}")
-    print(f"Total Events Today: {events.count()}")
+    
 
-    for e in events:
-        print(f"Event: {e.event_name} | DateTime: {e.date_time}")
+    
 
     # ✅ Serialize follow-ups and events
     followup_data = FollowUpWithCustomerSerializer(followups, many=True).data
@@ -323,7 +318,6 @@ def salesmanager_all_events(request):
     # Fix for FollowUp filtering
     
 
-    # Debugging: Print all events
     all_events = Sales_Manager_Event.objects.filter(staff_id=salesmanager.id)
     
 

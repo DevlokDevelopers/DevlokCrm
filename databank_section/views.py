@@ -87,7 +87,6 @@ def store_data_into_db(request, lead_id):
     if lead.staff_id != sales_manager.id:
         return Response({"error": "Sales Manager mismatch"}, status=status.HTTP_403_FORBIDDEN)
 
-    print("Incoming data:", request.data)  # ✅ Print full data
     serializer = DatabankSerializer(data=request.data)
 
     if serializer.is_valid():
@@ -106,7 +105,6 @@ def store_data_into_db(request, lead_id):
             )
         return Response({"success": "Data stored successfully", "id": databank_entry.id}, status=status.HTTP_201_CREATED)
 
-    print("Validation errors:", serializer.errors)  # ✅ Show why it failed
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -135,7 +133,6 @@ def update_databank(request, databank_id):
     # Partially update only provided fields
     serializer = DataBankEditSerializer(databank, data=request.data, partial=True)
     if serializer.is_valid():
-        print(serializer.errors)
         serializer.save()
         lead_category_value = request.data.get('lead_category')
         if lead_category_value:
@@ -472,9 +469,9 @@ def get_coordinates(place_name):
             lng = results[0]['geometry']['lng']
             return (lat, lng)
         else:
-            print(f"Location not found for: {place_name}")
+            pass
     except Exception as e:
-        print("Geocoding error:", e)
+        pass
     return None
 
 
@@ -503,9 +500,9 @@ def geocode_location(place_name):
             lng = results[0]['geometry']['lng']
             return (lat, lng)
         else:
-            print(f"Location not found for: {place_name}")
+            pass
     except Exception as e:
-        print("Geocoding error:", e)
+        pass
     return None
 
 @api_view(['GET'])
@@ -754,9 +751,9 @@ def send_matching_pdf(request, property_id):
                         content.append(img)
                         content.append(Spacer(1, 6))
                     else:
-                        print(f"Failed to load image: {image_url} (status code: {response.status_code})")
+                        pass
                 except Exception as e:
-                    print(f"Image loading error: {e}")
+                    pass
 
             content.append(Spacer(1, 12))
             content.append(Table([[" " * 150]], style=[("LINEBELOW", (0, 0), (-1, -1), 0.5, colors.grey)]))
