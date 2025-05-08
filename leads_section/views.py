@@ -23,6 +23,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
 from django.utils.timezone import localtime
+from django.db.models import Count, Q, Case, When, Value, CharField
 
 # Create your views here.
 import logging
@@ -347,34 +348,47 @@ def salesmanager_monthly_performance(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated,IsCustomAdminUser])
+@permission_classes([IsAuthenticated, IsCustomAdminUser])
 def leads_graph_data(request):
-    admin = request.user  # `request.user` will be automatically populated with the authenticated user
-
-    # Check if the user is an admin
+    admin = request.user
     if not hasattr(admin, 'admin_reg'):
         return Response({'error': 'Admin authentication required'}, status=status.HTTP_403_FORBIDDEN)
-    purposes = ['For Buying a Property', 'For Selling a Property', 'For Rental or Lease', 'Looking to Rent or Lease Property']
 
+    purposes = [
+        'For Buying a Property',
+        'For Selling a Property',
+        'For Rental or Lease',
+        'Looking to Rent or Lease Property'
+    ]
+
+    # Filter only for relevant purposes to reduce DB scan
+    queryset = Leads.objects.filter(purpose__in=purposes)
+
+    # Aggregate all required counts grouped by purpose
+    aggregated = (
+        queryset
+        .values('purpose')
+        .annotate(
+            total_leads=Count('id'),
+            data_saved_leads=Count('id', filter=Q(stage="Data Saved")),
+            closed_successfully_leads=Count('id', filter=Q(stage="Closed Successfully")),
+            unsuccessfully_closed_leads=Count('id', filter=Q(stage__in=["Closed by Someone", "Dropped Lead"])),
+            new_leads=Count('id', filter=Q(stage="Not Opened"))
+        )
+    )
+
+    # Ensure all purposes are present even if 0
+    data_by_purpose = {entry['purpose']: entry for entry in aggregated}
     graph_data = []
 
     for purpose in purposes:
-        total_leads = Leads.objects.filter(purpose=purpose).count()
-        data_saved_leads = Leads.objects.filter(purpose=purpose, stage="Data Saved").count()
-        closed_successfully_leads = Leads.objects.filter(purpose=purpose, stage="Closed Successfully").count()
-        unsuccessfully_closed_leads = Leads.objects.filter(
-            purpose=purpose,
-            stage__in=["Closed by Someone", "Dropped Lead"]
-        ).count()
-        new_leads = Leads.objects.filter(purpose=purpose, stage="Not Opened").count()
-
         graph_data.append({
             "purpose": purpose,
-            "total_leads": total_leads,
-            "data_saved_leads": data_saved_leads,
-            "closed_successfully_leads": closed_successfully_leads,
-            "unsuccessfully_closed_leads": unsuccessfully_closed_leads,
-            "new_leads": new_leads,
+            "total_leads": data_by_purpose.get(purpose, {}).get('total_leads', 0),
+            "data_saved_leads": data_by_purpose.get(purpose, {}).get('data_saved_leads', 0),
+            "closed_successfully_leads": data_by_purpose.get(purpose, {}).get('closed_successfully_leads', 0),
+            "unsuccessfully_closed_leads": data_by_purpose.get(purpose, {}).get('unsuccessfully_closed_leads', 0),
+            "new_leads": data_by_purpose.get(purpose, {}).get('new_leads', 0),
         })
 
     return Response({"graph_data": graph_data}, status=200)
