@@ -15,6 +15,7 @@ from django.middleware.csrf import get_token
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 import time
+from django.core.cache import cache
 
 
 # Create your views here.
@@ -44,12 +45,21 @@ def create_admin(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated,IsCustomAdminUser])
+@permission_classes([IsAuthenticated, IsCustomAdminUser])
 def get_admin(request):
+    # Check cache first
+    cached_admins = cache.get('admins_cache')
+    if cached_admins:
+        return Response(cached_admins, status=200)
     
-    admin = Admin_reg.objects.all()
-    admin_data = Get_Admin_Serializer(admin,many=True).data
-    return Response(admin_data,status=200)
+    # Use values() if you only need specific fields, e.g., username, email, etc.
+    admin_data = Admin_reg.objects.values('username', 'email', 'phonenumber', 'photo')  # Modify fields as necessary
+    admin_data_serialized = Get_Admin_Serializer(admin_data, many=True).data
+    
+    # Cache the result for 1 minute (adjust as necessary)
+    cache.set('admins_cache', admin_data_serialized, timeout=60)
+    
+    return Response(admin_data_serialized, status=200)
 
 
 @api_view(['POST'])
