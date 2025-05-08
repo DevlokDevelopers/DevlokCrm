@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'corsheaders',
+    'daphne',
     'channels',
     'django.contrib.staticfiles',
     'auth_section',
