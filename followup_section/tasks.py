@@ -46,7 +46,7 @@ def send_followup_notifications(self, followup_id, notification_type):
             try:
                 client_twilio.messages.create(
                     from_=TWILIO_WHATSAPP_FROM,
-                    to=f"whatsapp:{client_number}",
+                    to=f"whatsapp:+91{client_number}",
                     content_sid=TWILIO_CLIENT_TEMPLATE_SID,
                     content_variables=f'{{"1":"{client_name}", "2":"{staff_name}", "3":"{followup_date_local.strftime("%Y-%m-%d %H:%M")}"}}'
                 )
@@ -58,7 +58,7 @@ def send_followup_notifications(self, followup_id, notification_type):
             try:
                 client_twilio.messages.create(
                     from_=TWILIO_WHATSAPP_FROM,
-                    to=f"whatsapp:{staff_number}",
+                    to=f"whatsapp:+917558888638",
                     content_sid=TWILIO_STAFF_TEMPLATE_SID,
                     content_variables=f'{{"1":"{staff_name}", "2":"{client_name}", "3":"{followup_date_local.strftime("%Y-%m-%d %H:%M")}"}}'
                 )
