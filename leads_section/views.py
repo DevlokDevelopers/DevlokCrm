@@ -24,6 +24,7 @@ from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
 from django.utils.timezone import localtime
 from django.db.models import Count, Q, Case, When, Value, CharField
+from django.core.cache import cache
 
 # Create your views here.
 import logging
@@ -396,13 +397,17 @@ def leads_graph_data(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_new_leads(request):
-    
-    leads = Leads.objects.filter(stage="Not Opened",status="Pending").order_by('-timestamp')
-    
-    # Serialize leads data
-    serializer = LeadsViewSerializer(leads, many=True)
-    
-    return Response(serializer.data, status=200)
+    cached_data = cache.get('new_leads')
+    if cached_data:
+        return Response(cached_data, status=200)
+
+    leads = Leads.objects.filter(stage="Not Opened", status="Pending") \
+                         .only('id', 'name', 'email', 'timestamp', 'stage', 'status') \
+                         .order_by('-timestamp')[:100]
+    data = list(leads.values('id', 'name', 'email', 'timestamp', 'stage', 'status'))
+
+    cache.set('new_leads', data, timeout=30)  # Cache for 30 seconds
+    return Response(data, status=200)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated,IsCustomAdminUser])
