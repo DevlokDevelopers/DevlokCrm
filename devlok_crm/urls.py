@@ -32,5 +32,5 @@ urlpatterns = [
     # View to refresh JWT token
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
-if not settings.DEBUG:
+if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
