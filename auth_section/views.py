@@ -47,19 +47,10 @@ def create_admin(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsCustomAdminUser])
 def get_admin(request):
-    # Check cache first
-    cached_admins = cache.get('admins_cache')
-    if cached_admins:
-        return Response(cached_admins, status=200)
-    
-    # Use values() if you only need specific fields, e.g., username, email, etc.
-    admin_data = Admin_reg.objects.values('username', 'email', 'phonenumber', 'photo')  # Modify fields as necessary
-    admin_data_serialized = Get_Admin_Serializer(admin_data, many=True).data
-    
-    # Cache the result for 1 minute (adjust as necessary)
-    cache.set('admins_cache', admin_data_serialized, timeout=60)
-    
-    return Response(admin_data_serialized, status=200)
+    admins = Admin_reg.objects.only('username', 'email', 'phonenumber')
+    data = list(admins.values('username', 'email', 'phonenumber'))
+    return Response(data, status=200)
+
 
 
 @api_view(['POST'])
