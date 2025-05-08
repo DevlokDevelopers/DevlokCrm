@@ -224,7 +224,7 @@ def forgot_password(request):
 
     reset_token = user.generate_reset_token()
 
-    reset_link = f"https://crmdevlok-production.up.railway.app/reset-password/{reset_token}/"
+    reset_link = f"https://devlokcrm.up.railway.app/reset-password/{reset_token}/"
 
     subject = "Password Reset Request"
     message = f"Click the link below to reset your password:\n{reset_link}\nThis link will expire in 15 minutes."
