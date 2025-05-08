@@ -2,12 +2,26 @@ from celery import shared_task
 from django.core.mail import send_mail
 from datetime import datetime
 from .models import Leads  # Import your Lead model
+from twilio.rest import Client
 
+
+TWILIO_ACCOUNT_SID = "ACe1b80056ccbacae1f088ba119ce08ccd"  # Replace with your Twilio SID
+TWILIO_AUTH_TOKEN = "9a1fbe994320c91faeac1941d4dfbca9"  # Replace with your Twilio auth token
+TWILIO_WHATSAPP_FROM = "whatsapp:+919562080200"
+TWILIO_CLIENT_TEMPLATE_SID = "HX6ad0cb700738b989ebd42340f2372c27"  # Replace this
+
+client_twilio = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 @shared_task
 def send_followup_email(lead_id):
     lead = Leads.objects.filter(id=lead_id).first()
     if lead:
-        subject = "Follow-Up: Lead Closure Notification"
-        message = f"Dear {lead.name},\n\nYour lead was closed one year ago. If you need further assistance, feel free to reach out.\n\nBest regards,\nYour Company"
-        recipient_email = lead.email  # Assuming you have customer_email field
-        send_mail(subject, message, 'jrdjangodeveloper@gmail.com', [recipient_email])
+        try:
+            client_twilio.messages.create(
+            from_=TWILIO_WHATSAPP_FROM,
+            to=f"whatsapp:+91{lead.phonenumber}",
+            content_sid=TWILIO_CLIENT_TEMPLATE_SID,
+            content_variables=f'{{"1":"{lead.name}"}}'
+            )
+            print(f"✅ WhatsApp sent to client: {lead.phonenumber}")
+        except Exception as err:
+            print(f"❌ Error sending to client WhatsApp: {err}")

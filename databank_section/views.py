@@ -42,6 +42,7 @@ from geopy.geocoders import Nominatim
 from opencage.geocoder import OpenCageGeocode
 from geopy.distance import geodesic
 import re
+from twilio.rest import Client
 
 
 @api_view(['GET'])
@@ -551,8 +552,13 @@ def filter_data_banks(request):
 
 
 
+TWILIO_ACCOUNT_SID = "ACe1b80056ccbacae1f088ba119ce08ccd"  # Replace with your Twilio SID
+TWILIO_AUTH_TOKEN = "9a1fbe994320c91faeac1941d4dfbca9"  # Replace with your Twilio auth token
+TWILIO_WHATSAPP_FROM = "whatsapp:+919562080200"
+TWILIO_GLM_TEMPLATE_SID = "HXddddd6aa991dcb1681f68d917ee120b4"  # Replace this
+TWILIO_MATCHEDDATA_TEMPLATE_SID = "HXb536d83e4e7a7ee7bdd1965ba6b099f1" 
 
-
+client_twilio = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 
 
@@ -640,19 +646,25 @@ def send_matching_pdf(request, property_id):
         ranked_matches.sort(reverse=True, key=lambda x: x[0])
 
         if not ranked_matches:
-            ground_staff_emails = Ground_level_managers_reg.objects.values_list("email", flat=True)
-            if ground_staff_emails:
-                subject = "⚠️ No Matches Found for New Property"
-                message = (
-                    f"A new property (ID: {new_property.id}, Purpose: {new_property.purpose}, Type: {new_property.mode_of_property}) "
-                    f"has been added, but no matching properties were found."
-                )
-                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, list(ground_staff_emails), fail_silently=True)
+            ground_staff_phonenumbers = Ground_level_managers_reg.objects.values_list("phonenumber", flat=True)
+            if ground_staff_phonenumbers:
+                for phone_number in ground_staff_phonenumbers:
+                    try:
+                        client_twilio.messages.create(
+                            from_=TWILIO_WHATSAPP_FROM,
+                            to=f"whatsapp:+91{phone_number}",
+                            content_sid=TWILIO_GLM_TEMPLATE_SID,
+                            content_variables=f'{{"1":"{new_property.purpose}", "2":"{new_property.mode_of_property}", "3":"{new_property.district}","4":"{new_property.place}"}}'
+                        )
+                        print(f"✅ WhatsApp sent to ground staff: +91{phone_number}")
+                    except Exception as err:
+                        print(f"❌ Error sending to ground staff +91{phone_number}: {err}")
 
             return Response(
-                {"message": "⚠️ No matching properties found! Email notification sent to Ground-Level Staff."},
+                {"message": "⚠️ No matching properties found! WhatsApp notification sent to Ground-Level Staff."},
                 status=status.HTTP_200_OK,
             )
+
 
         # === PDF Generation ===
         buffer = BytesIO()
@@ -789,8 +801,51 @@ def send_matching_pdf(request, property_id):
         email = EmailMessage(subject, body, settings.DEFAULT_FROM_EMAIL, [to_email])
         email.attach(f"matching_properties_{property_id}.pdf", buffer.read(), "application/pdf")
         email.send(fail_silently=False)
+        
+        # Assume 'ranked_matches' contains a list of matching properties
+        batch_size = 10  # The number of properties to send per message
 
-        return Response({"message": "Matching properties PDF sent to client successfully."})
+        # Split ranked_matches into chunks of 10 properties
+        for i in range(0, len(ranked_matches), batch_size):
+            chunk = ranked_matches[i:i+batch_size]
+
+            # Format the content_variables for each chunk
+            content_variables = {}
+
+            # Iterate over the properties in the chunk
+            for j, match in enumerate(chunk):
+                # Calculate dynamic placeholders for each property in the chunk
+                base_index = j * 10  # base index for each property set (1-10, 11-20, etc.)
+                
+                content_variables[str(1 + base_index)] = match.district or ""
+                content_variables[str(2 + base_index)] = match.place or ""
+                content_variables[str(3 + base_index)] = match.purpose or ""
+                content_variables[str(4 + base_index)] = match.mode_of_property or ""
+                content_variables[str(5 + base_index)] = match.demand_price or ""
+                content_variables[str(6 + base_index)] = match.area_in_sqft or ""
+                content_variables[str(7 + base_index)] = match.building_bhk or "N/A"
+                content_variables[str(8 + base_index)] = match.number_of_floors or "N/A"
+                content_variables[str(9 + base_index)] = match.building_roof or "N/A"
+                content_variables[str(10 + base_index)] = match.additional_note or "None"
+
+            # Remove any placeholders that are empty (i.e., avoid sending empty data)
+            content_variables = {key: value for key, value in content_variables.items() if value}
+
+            # Send the message for the current chunk of data
+            try:
+                client_twilio.messages.create(
+                    from_=TWILIO_WHATSAPP_FROM,
+                    to=f"whatsapp:+91{new_property.phonenumber}",
+                    content_sid=TWILIO_GLM_TEMPLATE_SID,
+                    content_variables=content_variables  # Send the formatted content
+                )
+                print(f"✅ WhatsApp sent to client: +91{new_property.phonenumber}")
+            except Exception as err:
+                print(f"❌ Error sending to client +91{new_property.phonenumber}: {err}")
+
+
+            return Response({"message": "Matching properties PDF sent to client successfully."})
+        
 
     except Exception as e:
         return Response({"error": str(e)}, status=500)
