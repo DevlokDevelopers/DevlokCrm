@@ -167,7 +167,8 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://devlokcrm.up.railway.app/"
+    "https://devlokcrm.up.railway.app/",
+    "https://devlokcrmbackend.up.railway.app/"
     
 ]
 
