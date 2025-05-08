@@ -8,6 +8,16 @@ from django.utils.timezone import localtime, make_aware
 from django.utils import timezone
 import time
 import sys
+from twilio.rest import Client
+
+
+TWILIO_ACCOUNT_SID = "ACe1b80056ccbacae1f088ba119ce08ccd"  # Replace with your Twilio SID
+TWILIO_AUTH_TOKEN = "f444e5c27cff9d21903fdb12bc7195b3"  # Replace with your Twilio auth token
+TWILIO_WHATSAPP_FROM = "whatsapp:+919562080200"
+TWILIO_CLIENT_TEMPLATE_SID = "HX51d4d8f8600049d2073171a51d1b099f"  # Replace this
+TWILIO_STAFF_TEMPLATE_SID = "HX434f1543b570a22fd39556c3358519f8"  # Replace this
+
+client_twilio = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 @shared_task(bind=True, max_retries=5, default_retry_delay=3)  # retry up to 5 times with 3 seconds delay
 def send_followup_notifications(self, followup_id, notification_type):
@@ -21,8 +31,8 @@ def send_followup_notifications(self, followup_id, notification_type):
             followup_date = make_aware(followup_date)
         followup_date_local = localtime(followup_date)
 
-        client_email = followup.lead.email
-        staff_email = followup.follower.email
+        client_number = followup.lead.phonenumber
+        staff_number = followup.follower.phonenumber
         staff_id = followup.follower.id
 
         # Get the names of the lead and the sales manager
@@ -30,87 +40,33 @@ def send_followup_notifications(self, followup_id, notification_type):
         staff_name = followup.follower.username# Using first and last name of the sales manager
 
         # Notification content for client
-        if notification_type == "created":
-            subject_client = "Follow-Up Scheduled"
-            message_client = (
-                f"Dear {client_name},\n\n"
-                f"We would like to inform you that a follow-up has been scheduled with our Sales Manager, {staff_name}, on {followup_date_local.strftime('%Y-%m-%d %H:%M')}.\n\n"
-                f"Please be prepared for the follow-up session at the scheduled time.\n\n"
-                f"Best regards,\n"
-                f"Devlok CRM Team"
-            )
-        elif notification_type == "24_hour":
-            subject_client = "Reminder: Follow-Up Tomorrow"
-            message_client = (
-                f"Dear {client_name},\n\n"
-                f"This is a friendly reminder that your follow-up with our Sales Manager, {staff_name}, is scheduled for tomorrow at {followup_date_local.strftime('%Y-%m-%d %H:%M')}.\n\n"
-                f"Please be available at the scheduled time.\n\n"
-                f"Best regards,\n"
-                f"Devlok CRM Team"
-            )
-        elif notification_type == "30_min":
-            subject_client = "Reminder: Follow-Up in 30 Minutes"
-            message_client = (
-                f"Dear {client_name},\n\n"
-                f"This is a final reminder that your follow-up with our Sales Manager, {staff_name}, is scheduled in 30 minutes at {followup_date_local.strftime('%Y-%m-%d %H:%M')}.\n\n"
-                f"Please make sure to be available at the scheduled time.\n\n"
-                f"Best regards,\n"
-                f"Devlok CRM Team"
-            )
-
-        # Notification content for sales manager (staff)
-        if notification_type == "created":
-            subject_staff = "Follow-Up Scheduled"
-            message_staff = (
-                f"Dear {staff_name},\n\n"
-                f"A follow-up has been scheduled with your client, {client_name}, on {followup_date_local.strftime('%Y-%m-%d %H:%M')}.\n\n"
-                f"Please ensure you are prepared for the session.\n\n"
-                f"Best regards,\n"
-                f"Devlok CRM Team"
-            )
-        elif notification_type == "24_hour":
-            subject_staff = "Reminder: Follow-Up Tomorrow"
-            message_staff = (
-                f"Dear {staff_name},\n\n"
-                f"Reminder: Your follow-up with your client, {client_name}, is scheduled for tomorrow at {followup_date_local.strftime('%Y-%m-%d %H:%M')}.\n\n"
-                f"Please be prepared for the session.\n\n"
-                f"Best regards,\n"
-                f"Devlok CRM Team"
-            )
-        elif notification_type == "30_min":
-            subject_staff = "Reminder: Follow-Up in 30 Minutes"
-            message_staff = (
-                f"Dear {staff_name},\n\n"
-                f"Final reminder: Your follow-up with your client, {client_name}, is scheduled in 30 minutes at {followup_date_local.strftime('%Y-%m-%d %H:%M')}.\n\n"
-                f"Please ensure you are ready for the session.\n\n"
-                f"Best regards,\n"
-                f"Devlok CRM Team"
-            )
-
-        # Send email to both client and sales manager with their respective content
-        send_mail(
-            subject_client, 
-            message_client, 
-            "devlokpromotions@gmail.com", 
-            [client_email],  # Send only to the client
-            fail_silently=False
-        )
-        send_mail(
-            subject_staff, 
-            message_staff, 
-            "devlokpromotions@gmail.com", 
-            [staff_email],  # Send only to the sales manager
-            fail_silently=False
-        )
         
-        print(f"✅ Email sent to {client_email} and {staff_email}")
+        if notification_type == "30_min":
+            # Send WhatsApp to client
+            try:
+                client_twilio.messages.create(
+                    from_=TWILIO_WHATSAPP_FROM,
+                    to=f"whatsapp:{client_number}",
+                    content_sid=TWILIO_CLIENT_TEMPLATE_SID,
+                    content_variables=f'{{"1":"{client_name}", "2":"{staff_name}", "3":"{followup_date_local.strftime("%Y-%m-%d %H:%M")}"}}'
+                )
+                print(f"✅ WhatsApp sent to client: {client_number}")
+            except Exception as err:
+                print(f"❌ Error sending to client WhatsApp: {err}")
 
-        # WebSocket or other notifications can be handled here if needed
-        # Example: async_to_sync(get_channel_layer().send)(f"user_{staff_id}", {
-        #     "type": "notification",
-        #     "message": message_staff
-        # })
+            # Send WhatsApp to staff
+            try:
+                client_twilio.messages.create(
+                    from_=TWILIO_WHATSAPP_FROM,
+                    to=f"whatsapp:{staff_number}",
+                    content_sid=TWILIO_STAFF_TEMPLATE_SID,
+                    content_variables=f'{{"1":"{staff_name}", "2":"{client_name}", "3":"{followup_date_local.strftime("%Y-%m-%d %H:%M")}"}}'
+                )
+                print(f"✅ WhatsApp sent to staff: {staff_number}")
+            except Exception as err:
+                print(f"❌ Error sending to staff WhatsApp: {err}")
 
+        
     except FollowUp.DoesNotExist:
         print(f"❌ Follow-up not found, retrying... (ID: {followup_id})")
         raise self.retry(exc=FollowUp.DoesNotExist(f"FollowUp {followup_id} not found"), countdown=2)

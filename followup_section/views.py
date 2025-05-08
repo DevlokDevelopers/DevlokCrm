@@ -60,12 +60,7 @@ def create_followup(request, lead_id):
             followup = serializer.save(follower=salesmanager, lead=lead)
 
             def enqueue_notifications():
-                send_followup_notifications.delay(followup.id, "created")
-                send_followup_notifications.apply_async(
-                    args=[followup.id, "24_hour"],
-                    eta=localtime(followup.followup_date) - timedelta(days=1),
-                    countdown=5
-                )
+                
                 send_followup_notifications.apply_async(
                     args=[followup.id, "30_min"],
                     eta=localtime(followup.followup_date) - timedelta(minutes=30)
