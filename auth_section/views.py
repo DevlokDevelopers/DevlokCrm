@@ -14,6 +14,7 @@ from rest_framework import status
 from django.middleware.csrf import get_token
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
+import time
 
 
 # Create your views here.
@@ -50,55 +51,52 @@ def get_admin(request):
     admin_data = Get_Admin_Serializer(admin,many=True).data
     return Response(admin_data,status=200)
 
+
 @api_view(['POST'])
-@permission_classes([AllowAny])  # Allow anyone to access this API
+@permission_classes([AllowAny])
 def Login_func(request):
+    start_time = time.time()  # ⏱️ Start measuring
+
     serializer = LoginSerializer(data=request.data)
 
     if serializer.is_valid():
         email = serializer.validated_data['email']
         password = serializer.validated_data['password']
 
+        # Check Admin
+        admin_user = Admin_reg.objects.select_related('user').filter(email=email).first()
+        if admin_user and check_password(password, admin_user.password):
+            refresh = RefreshToken.for_user(admin_user.user)
+            response = {
+                "message": "Admin successfully logged in",
+                "access_token": str(refresh.access_token),
+                "refresh_token": str(refresh),
+                "username": admin_user.username,
+                "id": admin_user.user.id,
+            }
+            print("Login duration:", time.time() - start_time)
+            return Response(response, status=200)
 
-        # ✅ Check if the user is Admin
-        admin_user = Admin_reg.objects.filter(email=email).first()
-        if admin_user:
-            if check_password(password, admin_user.password):  # ✅ Admin Password Check
-                
-                # Use the associated `User` model instance for JWT generation
-                refresh = RefreshToken.for_user(admin_user.user)  # Use the `User` instance
-                access_token = str(refresh.access_token)
-                refresh_token = str(refresh)
+        # Check Sales Manager
+        sales_manager_user = Sales_manager_reg.objects.select_related('user').filter(email=email).first()
+        if sales_manager_user and check_password(password, sales_manager_user.password):
+            refresh = RefreshToken.for_user(sales_manager_user.user)
+            response = {
+                "message": "Sales Manager successfully logged in",
+                "access_token": str(refresh.access_token),
+                "refresh_token": str(refresh),
+                "username": sales_manager_user.username,
+                "id": sales_manager_user.id,
+            }
+            print("Login duration:", time.time() - start_time)
+            return Response(response, status=200)
 
-                return Response({
-                    "message": "Admin successfully logged in",
-                    "access_token": access_token,
-                    "refresh_token": refresh_token,
-                    "username": admin_user.username,  # Return the username
-                    "id": admin_user.user.id,  # Return the User ID
-                }, status=200)
-
-        # ✅ Check if the user is a Sales Manager
-        sales_manager_user = Sales_manager_reg.objects.filter(email=email).first()
-        if sales_manager_user:
-            if check_password(password, sales_manager_user.password):  # ✅ Sales Manager Password Check
-
-                # Use the associated `User` model instance for JWT generation
-                refresh = RefreshToken.for_user(sales_manager_user.user)  # Use the `User` instance
-                access_token = str(refresh.access_token)
-                refresh_token = str(refresh)
-
-                return Response({
-                    "message": "Sales Manager successfully logged in",
-                    "access_token": access_token,
-                    "refresh_token": refresh_token,
-                    "username": sales_manager_user.username,  # Return the username
-                    "id": sales_manager_user.id,  # Return the User ID
-                }, status=200)
-
+        print("Login duration:", time.time() - start_time)
         return Response({"error": "Invalid credentials"}, status=400)
 
+    print("Login duration:", time.time() - start_time)
     return Response({"error": "Invalid data"}, status=400)
+
 
 
 
