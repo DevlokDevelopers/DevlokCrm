@@ -1398,14 +1398,31 @@ def Databank_List_admin(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsCustomAdminUser])
 def Databank(request):
-    admin = request.user  # `request.user` will be automatically populated with the authenticated user
+    admin = request.user
 
-    # Check if the user is an admin
     if not hasattr(admin, 'admin_reg'):
         return Response({'error': 'Admin authentication required'}, status=status.HTTP_403_FORBIDDEN)
 
-    # Fetch all the records
+    # Databank list
     databank_list = DataBank.objects.all()
+    serializer = DataBankGETSerializer(databank_list, many=True)
 
-    serializer = DataBankGETSerializer(databank_list, many=True).data
-    return Response(serializer, status=200)
+    # Analytics data
+    total_datas = databank_list.count()
+    for_buy = databank_list.filter(purpose='For Buying a Property').count()
+    for_sell = databank_list.filter(purpose='For Selling a Property').count()
+    for_rent = databank_list.filter(purpose='For Rental or Lease').count()
+    rental_seeker = databank_list.filter(purpose='Looking to Rent or Lease Property').count()
+
+    analytics = {
+        "total_collections": total_datas,
+        "buy": for_buy,
+        "sell": for_sell,
+        "for_rental": for_rent,
+        "rental_seeker": rental_seeker,
+    }
+
+    return Response({
+        "databank": serializer.data,
+        "analytics": analytics
+    }, status=200)
