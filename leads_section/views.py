@@ -538,18 +538,6 @@ def salesmanger_leads_graph(request):
     return Response({"graph_data": list(summary.values())}, status=200)
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated,IsSalesManagerUser])
-def get_newleads_salesmanager(request):
-    staff = request.user
-
-    # Ensure the authenticated user is a Sales Manager
-    if not hasattr(staff, 'sales_manager_reg'):
-        return Response({"error": "Not a valid sales manager"}, status=403)
-    new_leads = Leads.objects.filter(staff_id=0,stage="Not Opened").order_by('-timestamp')
-    serializer = LeadsViewSerializer(new_leads,many=True).data
-    return Response(serializer,status=200)
-
 
 
 
