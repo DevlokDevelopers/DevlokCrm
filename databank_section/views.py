@@ -1354,17 +1354,24 @@ def admin_view_images_databank(request, databank_id):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated,IsCustomAdminUser])
-def lead_into_databank_admin(request,lead_id):
+@permission_classes([IsAuthenticated, IsCustomAdminUser])
+def lead_into_databank_admin(request, lead_id):
     admin = request.user  # `request.user` will be automatically populated with the authenticated user
 
     # Check if the user is an admin
     if not hasattr(admin, 'admin_reg'):
         return Response({'error': 'Admin authentication required'}, status=status.HTTP_403_FORBIDDEN)
 
-    databank = DataBank.objects.filter(lead_id=lead_id)
-    serializer = DataBankGETSerializer(databank,many=True).data
-    return Response(serializer,status=status.HTTP_200_OK)
+    # Use select_related for optimized fetching of related fields (follower, etc.)
+    databank = DataBank.objects.filter(lead_id=lead_id).select_related('follower').only('id', 'follower__username', 'timestamp', 'name', 'email', 'phonenumber', 'district', 'place', 'address', 'purpose', 'mode_of_property', 'demand_price', 'location_proposal_district', 'location_proposal_place', 'area_in_sqft', 'building_roof', 'number_of_floors', 'building_bhk', 'additional_note', 'lead_category', 'location_link', 'image_folder')
+    
+    # If you have related projects, use prefetch_related (for many-to-many relationships)
+    # Example: prefetch_related('projects') if you have a many-to-many relationship with projects
+    # databank = databank.prefetch_related(Prefetch('projects')).only('id', 'projects__project_name')
+
+    # Serialize the data
+    serializer = DataBankGETSerializer(databank, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 
