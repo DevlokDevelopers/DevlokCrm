@@ -1395,3 +1395,17 @@ def Databank_List_admin(request):
 
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsCustomAdminUser])
+def Databank(request):
+    admin = request.user  # `request.user` will be automatically populated with the authenticated user
+
+    # Check if the user is an admin
+    if not hasattr(admin, 'admin_reg'):
+        return Response({'error': 'Admin authentication required'}, status=status.HTTP_403_FORBIDDEN)
+
+    # Fetch all the records
+    databank_list = DataBank.objects.all()
+
+    serializer = DataBankGETSerializer(databank_list, many=True).data
+    return Response(serializer, status=200)
