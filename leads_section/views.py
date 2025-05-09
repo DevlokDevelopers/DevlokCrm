@@ -480,42 +480,63 @@ def get_pending_leads(request):
 
 
 
+from django.db.models import Count, Q
+
 @api_view(['GET'])
-@permission_classes([IsAuthenticated,IsSalesManagerUser])
+@permission_classes([IsAuthenticated, IsSalesManagerUser])
 def salesmanger_leads_graph(request):
     staff = request.user
 
-    # Ensure the authenticated user is a Sales Manager
     if not hasattr(staff, 'sales_manager_reg'):
         return Response({"error": "Not a valid sales manager"}, status=403)
     
-    salesmanger= Sales_manager_reg.objects.filter(user=staff.id).first()
-    
-    purposes = ['For Buying a Property', 'For Selling a Property', 'For Rental or Lease', 'Looking to Rent or Lease Property']
+    salesmanager = staff.sales_manager_reg  # Use reverse relation directly
 
-    graph_data = []
+    purposes = [
+        'For Buying a Property',
+        'For Selling a Property',
+        'For Rental or Lease',
+        'Looking to Rent or Lease Property'
+    ]
 
-    for purpose in purposes:
-        total_leads = Leads.objects.filter(staff_id=salesmanger.id,purpose=purpose).count()
-        data_saved_leads = Leads.objects.filter(staff_id=salesmanger.id,purpose=purpose, stage="Data Saved").count()
-        closed_successfully_leads = Leads.objects.filter(staff_id=salesmanger.id,purpose=purpose, stage="Closed Successfully").count()
-        unsuccessfully_closed_leads = Leads.objects.filter(
-            staff_id=salesmanger.id,
-            purpose=purpose,
-            stage__in=["Closed by Someone", "Dropped Lead"]
-        ).count()
-        new_leads = Leads.objects.filter(purpose=purpose, stage="Not Opened").count()
+    # Fetch all relevant leads in one query
+    leads = Leads.objects.filter(staff_id=salesmanager.id)
 
-        graph_data.append({
-            "purpose": purpose,
-            "total_leads": total_leads,
-            "data_saved_leads": data_saved_leads,
-            "closed_successfully_leads": closed_successfully_leads,
-            "unsuccessfully_closed_leads": unsuccessfully_closed_leads,
-            "new_leads": new_leads,
-        })
+    # Annotate the counts grouped by purpose and stage
+    grouped = leads.values('purpose', 'stage').annotate(count=Count('id'))
 
-    return Response({"graph_data": graph_data}, status=200)
+    # Also get count of new leads separately (not filtered by staff)
+    new_leads_raw = Leads.objects.filter(stage="Not Opened").values('purpose').annotate(count=Count('id'))
+    new_leads_map = {item['purpose']: item['count'] for item in new_leads_raw}
+
+    # Organize data into a summary dictionary
+    summary = {purpose: {
+        "purpose": purpose,
+        "total_leads": 0,
+        "data_saved_leads": 0,
+        "closed_successfully_leads": 0,
+        "unsuccessfully_closed_leads": 0,
+        "new_leads": new_leads_map.get(purpose, 0),
+    } for purpose in purposes}
+
+    for item in grouped:
+        purpose = item['purpose']
+        stage = item['stage']
+        count = item['count']
+        if purpose not in summary:
+            continue
+
+        summary[purpose]["total_leads"] += count
+
+        if stage == "Data Saved":
+            summary[purpose]["data_saved_leads"] = count
+        elif stage == "Closed Successfully":
+            summary[purpose]["closed_successfully_leads"] = count
+        elif stage in ["Closed by Someone", "Dropped Lead"]:
+            summary[purpose]["unsuccessfully_closed_leads"] += count
+
+    return Response({"graph_data": list(summary.values())}, status=200)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated,IsSalesManagerUser])
