@@ -7,7 +7,7 @@ from .views import (get_lead_data,store_data_into_db,
                     SalesM_RentSeeker_databank,single_databank,add_image_databank,view_images_databank,delete_image,
                     salesmanager_databank_graph,salesmanager_search_databank,lead_into_databank_salesmanager,admin_single_databank,
                     admin_view_images_databank,lead_into_databank_admin,Databank_List_admin,send_matching_pdf,databank_suggestions,
-                    autocomplete_databank,autocomplete_databank_salesmanager,DataBank)
+                    autocomplete_databank,autocomplete_databank_salesmanager,Databank)
 
 
 urlpatterns = [
@@ -44,7 +44,7 @@ urlpatterns = [
     path("suggestions_admin/", databank_suggestions, name="databank_suggestions"),
     path("auto_complete_search_admin/",autocomplete_databank,name="autocomplete"),
     path("salesMSearchAutoComplete/",autocomplete_databank_salesmanager,name="salesMAutoComplete"),
-    path("databank_list/",DataBank,name="databank")
+    path("databank_list/",Databank,name="databank")
 
     
 ]
