@@ -23,7 +23,6 @@ from rest_framework.permissions import IsAuthenticated
 from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
 from django.utils.timezone import localtime
-from django.core.cache import cache
 
 # Create your views here.
 import logging
@@ -298,50 +297,47 @@ def get_lead_closure_stats(request, salesmanager_id):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated, IsSalesManagerUser])
+@permission_classes([IsAuthenticated, IsSalesManagerUser])  # Ensure the user is authenticated and a Sales Manager
 def salesmanager_monthly_performance(request):
+    # The user is automatically set via JWT
     salesmanager = request.user
 
+    # Ensure the authenticated user is a Sales Manager
     if not hasattr(salesmanager, 'sales_manager_reg'):
         return Response({"error": "Not a valid sales manager"}, status=403)
 
     staff = Sales_manager_reg.objects.filter(user=salesmanager.id).first()
-
+    
+    # Calculate the start of the current month
     today = now().date()
-    current_month = today.strftime('%Y-%m')  # e.g., "2025-05"
-    cache_key = f"monthly_perf_{staff.id}_{current_month}"
-
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        return Response(cached_data)
-
-    start_of_month = today.replace(day=1)
+    start_of_month = today.replace(day=1)  # First day of current month
     start_of_month_datetime = datetime.combine(start_of_month, datetime.min.time())
 
+    # Get total leads for this Sales Manager created this month
     total_leads = Leads.objects.filter(
         staff_id=staff.id,
         timestamp__gte=start_of_month_datetime
     ).count()
 
+    # Get successfully closed leads in this month
     closed_successfully = Leads.objects.filter(
         staff_id=staff.id,
         stage="Closed Successfully",
-        closed_date__isnull=False,
+        closed_date__isnull=False,  # Only leads that have a closed date
         closed_date__gte=start_of_month
     ).count()
 
+    # Calculate percentage of leads closed successfully
     success_percentage = (
         (closed_successfully / total_leads) * 100 if total_leads > 0 else 0
     )
 
+    # Prepare the response data for graph plotting
     response_data = {
         "total_leads": total_leads,
         "closed_successfully": closed_successfully,
         "success_percentage": round(success_percentage, 2),
     }
-
-    # Cache it for 30 minutes (1800 seconds)
-    cache.set(cache_key, response_data, timeout=1800)
 
     return Response(response_data, status=200)
 
