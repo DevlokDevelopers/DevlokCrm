@@ -101,6 +101,17 @@ CHANNEL_LAYERS = {
     },
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://default:cTFVSJbRmvNCYGxQUfzUDEcLEnxtuAhp@nozomi.proxy.rlwy.net:20713",  # Replace with your actual Redis URL
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+
 # Database (Railway: uses DATABASE_URL env)
 DATABASES = {
     'default': dj_database_url.config( default=DATABASES_URL, conn_max_age=1800)
