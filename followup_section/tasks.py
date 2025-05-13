@@ -12,7 +12,7 @@ from twilio.rest import Client
 
 
 TWILIO_ACCOUNT_SID = "ACe1b80056ccbacae1f088ba119ce08ccd"  # Replace with your Twilio SID
-TWILIO_AUTH_TOKEN = "805d5e9e5f5734c42b9a4cd864c9f73d"  # Replace with your Twilio auth token
+TWILIO_AUTH_TOKEN = "3412e2a2b0737b77b16d03783fca7feb"  # Replace with your Twilio auth token
 TWILIO_WHATSAPP_FROM = "whatsapp:+919562080200"
 TWILIO_CLIENT_TEMPLATE_SID = "HX51d4d8f8600049d2073171a51d1b099f"  # Replace this
 TWILIO_STAFF_TEMPLATE_SID = "HX434f1543b570a22fd39556c3358519f8"  # Replace this
